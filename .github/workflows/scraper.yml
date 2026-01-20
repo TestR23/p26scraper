@@ -17,7 +17,7 @@ jobs:
           node-version: 20
 
       - name: Instalar dependencias
-        run: npm start
+        run: npm install
 
       - name: Ejecutar scraper
         run: node scraper.js
