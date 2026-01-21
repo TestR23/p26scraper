@@ -1,11 +1,10 @@
-name: Scraper Test
+name: Hola Mundo
 
 on:
-  workflow_dispatch:
+  push:
 
 jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Test
-        run: echo "Hola desde GitHub Actions"
+      - run: echo "Hola amiga desde GitHub Actions"
