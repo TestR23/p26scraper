@@ -1,10 +1,32 @@
-name: Hola Mundo
+name: Actualizar partidos LaLiga
 
 on:
+  workflow_dispatch:
   push:
 
 jobs:
-  test:
+  scrape:
     runs-on: ubuntu-latest
+
     steps:
-      - run: echo "Hola amiga desde GitHub Actions"
+      - name: Clonar repo
+        uses: actions/checkout@v4
+
+      - name: Usar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Ejecutar scraper
+        run: node scraper.js
+
+      - name: Subir cambios
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add docs/partidos.json
+          git commit -m "Actualizar partidos" || echo "Sin cambios"
+          git push
