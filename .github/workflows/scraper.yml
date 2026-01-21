@@ -7,4 +7,5 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "Hola desde GitHub Actions"
+      - name: Test
+        run: echo "Hola desde GitHub Actions"
