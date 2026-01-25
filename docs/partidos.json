@@ -3,17 +3,50 @@
   "competicion": "LaLiga EA Sports",
   "partidos": [
     {
-      "hora": "21:00",
-      "local": "Levante",
-      "visitante": "Elche",
+      "hora": "14:00",
+      "local": "At. Madrid",
+      "visitante": "Mallorca",
+      "canales": [
+        "M+ LALIGA (M54 O110)",
+        "M+ LALIGA HDR (M440 O111)",
+        "Movistar Plus+ (M7): VER PARTIDO",
+        "Orange Fútbol 1 (107)",
+        "M+ LALIGA 2 (M57 O112)",
+        "LaLiga TV Bar"
+      ]
+    },
+    {
+      "hora": "16:15",
+      "local": "FC Barcelona",
+      "visitante": "Real Oviedo",
       "canales": [
         "DAZN LaLiga (M55 O113)",
         "DAZN (Ver en directo)",
-        "DAZN App Gratis (Ver gratis)",
-        "Teledeporte",
-        "RTVE Play",
+        "DAZN LaLiga 2 (M58 O114)",
+        "LaLiga TV Bar"
+      ]
+    },
+    {
+      "hora": "18:30",
+      "local": "Real Sociedad",
+      "visitante": "Celta",
+      "canales": [
+        "M+ LALIGA (M54 O110)",
+        "M+ LALIGA HDR (M440 O111)",
+        "LaLiga TV Bar"
+      ]
+    },
+    {
+      "hora": "21:00",
+      "local": "Alavés",
+      "visitante": "Real Betis",
+      "canales": [
+        "DAZN LaLiga (M55 O113)",
+        "DAZN (Ver en directo)",
         "LaLiga TV Bar"
       ]
     }
-  ]
+  ],
+  "total": 4,
+  "actualizacion": "2026-01-25T14:19:31.715Z"
 }
