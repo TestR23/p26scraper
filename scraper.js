@@ -1,10 +1,14 @@
 import axios from "axios";
 import * as cheerio from "cheerio";
 import fs from "fs";
+import path from "path";
 
 const URL = "https://www.futbolenlatv.es/competicion/la-liga";
+const OUTPUT_PATH = "docs/partidos.json";
 
 async function scrapearLaLigaHoy() {
+  console.log("⚽ Iniciando scraper LaLiga...");
+
   const response = await axios.get(URL, {
     headers: {
       "User-Agent":
@@ -13,7 +17,6 @@ async function scrapearLaLigaHoy() {
   });
 
   const $ = cheerio.load(response.data);
-
   const partidos = [];
 
   // 👉 SOLO la primera tabla (HOY)
@@ -51,16 +54,25 @@ async function scrapearLaLigaHoy() {
           fecha: "HOY",
           competicion: "LaLiga EA Sports",
           partidos,
+          total: partidos.length,
+          actualizacion: new Date().toISOString(),
         }
       : {
           fecha: "HOY",
           mensaje: "Hoy no hay partidos de LaLiga EA Sports",
+          actualizacion: new Date().toISOString(),
         };
 
-   fs.writeFileSync('docs/partidos.json', JSON.stringify(data, null, 2));
-  console.log("⚽ partidos.json generado correctamente");
+  // 👉 Asegurar que existe la carpeta docs/
+  fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
+
+  // 👉 Guardar JSON donde el workflow lo espera
+  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(resultado, null, 2));
+
+  console.log(`✅ ${OUTPUT_PATH} generado (${partidos.length} partidos)`);
 }
 
-scrapearLaLigaHoy();
-
-
+scrapearLaLigaHoy().catch((err) => {
+  console.error("❌ Error en el scraper:", err.message);
+  process.exit(1);
+});
