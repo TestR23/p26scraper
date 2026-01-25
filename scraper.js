@@ -57,7 +57,7 @@ async function scrapearLaLigaHoy() {
           mensaje: "Hoy no hay partidos de LaLiga EA Sports",
         };
 
-  fs.writeFileSync("partidos.json", JSON.stringify(resultado, null, 2));
+   fs.writeFileSync('docs/partidos.json', JSON.stringify(data, null, 2));
   console.log("⚽ partidos.json generado correctamente");
 }
 
