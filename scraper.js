@@ -19,44 +19,38 @@ async function scrapearLaLiga() {
   const $ = cheerio.load(response.data);
   const resultado = [];
 
-  // Cada bloque de fecha + tabla
-  $(".bloque").each((_, bloque) => {
-    const fecha = $(bloque).find(".cabecera h2").text().trim();
+  $(".titFecha").each((_, cabecera) => {
+    const fecha = $(cabecera).text().trim();
+    const tabla = $(cabecera).next("table");
     const partidos = [];
 
-    $(bloque)
-      .find("table.tablaPrincipal tr")
-      .each((_, row) => {
-        const hora = $(row).find("td.hora").text().trim();
-        const local = $(row).find("td.local span").text().trim();
-        const visitante = $(row).find("td.visitante span").text().trim();
+    tabla.find("tr").each((_, row) => {
+      const hora = $(row).find("td.hora").text().trim();
+      const local = $(row).find("td.local span").text().trim();
+      const visitante = $(row).find("td.visitante span").text().trim();
 
-        if (!hora || !local || !visitante) return;
+      if (!hora || !local || !visitante) return;
 
-        const canales = [];
+      const canales = [];
 
-        $(row)
-          .find("td.canales ul.listaCanales li")
-          .each((_, li) => {
-            const nombre = $(li).text().trim();
-            if (nombre && !nombre.includes("Comprar")) {
-              canales.push(nombre);
-            }
-          });
-
-        partidos.push({
-          hora,
-          local,
-          visitante,
-          canales,
+      $(row)
+        .find("td.canales li")
+        .each((_, li) => {
+          const canal = $(li).text().trim();
+          if (canal && !canal.includes("Comprar")) {
+            canales.push(canal);
+          }
         });
-      });
+
+      partidos.push({ hora, local, visitante, canales });
+    });
 
     if (partidos.length > 0) {
       resultado.push({
         fecha,
         competicion: "LaLiga EA Sports",
         partidos,
+        total: partidos.length,
       });
     }
   });
@@ -64,9 +58,10 @@ async function scrapearLaLiga() {
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(resultado, null, 2));
 
-  console.log(`✅ partidos.json generado con ${resultado.length} días`);
   console.log("RESULTADO FINAL:", JSON.stringify(resultado, null, 2));
+  console.log(`✅ partidos.json generado con ${resultado.length} días`);
 }
 
 scrapearLaLiga();
+
 
