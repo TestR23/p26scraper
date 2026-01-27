@@ -68,3 +68,5 @@ async function scrapearLaLiga() {
 }
 
 scrapearLaLiga();
+console.log("RESULTADO FINAL:", JSON.stringify(resultado, null, 2));
+
