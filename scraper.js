@@ -6,7 +6,7 @@ import path from "path";
 const URL = "https://www.futbolenlatv.es/competicion/la-liga";
 const OUTPUT_PATH = "docs/partidos.json";
 
-async function scrapearLaLigaHoy() {
+async function scrapearLaLiga() {
   console.log("⚽ Iniciando scraper LaLiga...");
 
   const response = await axios.get(URL, {
@@ -17,62 +17,54 @@ async function scrapearLaLigaHoy() {
   });
 
   const $ = cheerio.load(response.data);
-  const partidos = [];
+  const resultado = [];
 
-  // 👉 SOLO la primera tabla (HOY)
-  const tablaHoy = $("table.tablaPrincipal").first();
+  // Cada bloque de fecha + tabla
+  $(".bloque").each((_, bloque) => {
+    const fecha = $(bloque).find(".cabecera h2").text().trim();
+    const partidos = [];
 
-  tablaHoy.find("tr").each((_, row) => {
-    const hora = $(row).find("td.hora").text().trim();
-    const local = $(row).find("td.local span").text().trim();
-    const visitante = $(row).find("td.visitante span").text().trim();
+    $(bloque)
+      .find("table.tablaPrincipal tr")
+      .each((_, row) => {
+        const hora = $(row).find("td.hora").text().trim();
+        const local = $(row).find("td.local span").text().trim();
+        const visitante = $(row).find("td.visitante span").text().trim();
 
-    if (!hora || !local || !visitante) return;
+        if (!hora || !local || !visitante) return;
 
-    const canales = [];
+        const canales = [];
 
-    $(row)
-      .find("td.canales ul.listaCanales li")
-      .each((_, li) => {
-        const nombre = $(li).text().trim();
-        if (nombre && !nombre.includes("Comprar")) {
-          canales.push(nombre);
-        }
+        $(row)
+          .find("td.canales ul.listaCanales li")
+          .each((_, li) => {
+            const nombre = $(li).text().trim();
+            if (nombre && !nombre.includes("Comprar")) {
+              canales.push(nombre);
+            }
+          });
+
+        partidos.push({
+          hora,
+          local,
+          visitante,
+          canales,
+        });
       });
 
-    partidos.push({
-      hora,
-      local,
-      visitante,
-      canales,
-    });
+    if (partidos.length > 0) {
+      resultado.push({
+        fecha,
+        competicion: "LaLiga EA Sports",
+        partidos,
+      });
+    }
   });
 
-  const resultado =
-    partidos.length > 0
-      ? {
-          fecha: "HOY",
-          competicion: "LaLiga EA Sports",
-          partidos,
-          total: partidos.length,
-          actualizacion: new Date().toISOString(),
-        }
-      : {
-          fecha: "HOY",
-          mensaje: "Hoy no hay partidos de LaLiga EA Sports",
-          actualizacion: new Date().toISOString(),
-        };
-
-  // 👉 Asegurar que existe la carpeta docs/
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-
-  // 👉 Guardar JSON donde el workflow lo espera
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(resultado, null, 2));
 
-  console.log(`✅ ${OUTPUT_PATH} generado (${partidos.length} partidos)`);
+  console.log(`✅ partidos.json generado con ${resultado.length} días`);
 }
 
-scrapearLaLigaHoy().catch((err) => {
-  console.error("❌ Error en el scraper:", err.message);
-  process.exit(1);
-});
+scrapearLaLiga();
