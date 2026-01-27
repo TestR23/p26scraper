@@ -3,14 +3,18 @@ import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
 
-const URL = "https://www.partidos-de-hoy.com/";
+const URL =
+  "https://espndeportes.espn.com/futbol/calendario/_/league/esp.1/primera-division-de-espana";
 const OUTPUT_PATH = "docs/partidos.json";
 
-async function scrapearPartidosHoy() {
-  console.log("⚽ Iniciando scraper partidos-de-hoy.com...");
+async function scrapearESPN() {
+  console.log("⚽ Iniciando scraper ESPN Deportes...");
 
   const { data } = await axios.get(URL, {
-    headers: { "User-Agent": "Mozilla/5.0" }
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      "Accept-Language": "es-ES,es;q=0.9",
+    },
   });
 
   console.log("HTML length:", data.length);
@@ -18,52 +22,47 @@ async function scrapearPartidosHoy() {
   const $ = cheerio.load(data);
   const resultado = [];
 
-  // Buscar fechas por headers
-  $("h2, h3").each((_, header) => {
-    const textoFecha = $(header).text().trim();
-
-    // Filtrar solo fechas reales
-    if (!textoFecha.match(/\d{1,2}\s+\w+/i)) return;
-
+  // Cada bloque de fecha
+  $("h2.Table__Title").each((_, header) => {
+    const fecha = $(header).text().trim();
     const partidos = [];
-    let el = $(header).next();
 
-    while (el.length && !["h2", "h3"].includes(el[0].name)) {
-      const texto = el.text().replace(/\s+/g, " ").trim();
+    // La tabla viene justo después del h2
+    const tabla = $(header).next("div").find("table");
 
-      // Buscar patrón tipo "21:00 Equipo vs Equipo"
-      const horaMatch = texto.match(/\b\d{1,2}:\d{2}\b/);
+    tabla.find("tbody tr").each((_, row) => {
+      const cols = $(row).find("td");
+      if (cols.length < 3) return;
 
-      if (horaMatch) {
-        const hora = horaMatch[0];
+      const equiposTexto = $(cols[0]).text().replace(/\s+/g, " ").trim();
+      const hora = $(cols[1]).text().trim();
+      const tv = $(cols[2]).text().replace(/\s+/g, " ").trim();
 
-        // equipos
-        const equiposMatch = texto.match(/(\d{1,2}:\d{2})\s+(.+?)\s+vs\s+(.+?)(Canal|TV|$)/i);
+      // Formato: "Espanyol v Alavés"
+      const match = equiposTexto.match(/(.+?)\sv\s(.+)/i);
+      if (!match) return;
 
-        if (equiposMatch) {
-          const local = equiposMatch[2].trim();
-          const visitante = equiposMatch[3].trim();
+      const local = match[1].trim();
+      const visitante = match[2].trim();
 
-          // canales
-          const canales = [];
-          const canalesMatch = texto.match(/(DAZN.*|Movistar.*|LaLiga.*|Teledeporte.*|Gol.*)/gi);
-          if (canalesMatch) {
-            canalesMatch.forEach(c => canales.push(c.trim()));
-          }
+      const canales = tv
+        ? tv.split(",").map(c => c.trim()).filter(Boolean)
+        : [];
 
-          partidos.push({ hora, local, visitante, canales });
-        }
-      }
-
-      el = el.next();
-    }
+      partidos.push({
+        hora,
+        local,
+        visitante,
+        canales,
+      });
+    });
 
     if (partidos.length > 0) {
       resultado.push({
-        fecha: textoFecha,
+        fecha,
         competicion: "LaLiga",
         partidos,
-        total: partidos.length
+        total: partidos.length,
       });
     }
   });
@@ -78,6 +77,9 @@ async function scrapearPartidosHoy() {
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(resultado, null, 2));
 }
 
-scrapearPartidosHoy();
+scrapearESPN().catch(err => {
+  console.error("❌ Error en scraper:", err.message);
+  process.exit(1);
+});
 
 
