@@ -65,8 +65,8 @@ async function scrapearLaLiga() {
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(resultado, null, 2));
 
   console.log(`✅ partidos.json generado con ${resultado.length} días`);
+  console.log("RESULTADO FINAL:", JSON.stringify(resultado, null, 2));
 }
 
 scrapearLaLiga();
-console.log("RESULTADO FINAL:", JSON.stringify(resultado, null, 2));
 
