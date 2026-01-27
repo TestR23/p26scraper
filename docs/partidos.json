@@ -1,18 +1,1 @@
-{
-  "fecha": "HOY",
-  "competicion": "LaLiga EA Sports",
-  "partidos": [
-    {
-      "hora": "21:00",
-      "local": "Espanyol",
-      "visitante": "Alavés",
-      "canales": [
-        "DAZN LaLiga (M55 O113)",
-        "DAZN (Ver en directo)",
-        "LaLiga TV Bar"
-      ]
-    }
-  ],
-  "total": 1,
-  "actualizacion": "2026-01-27T09:28:53.657Z"
-}
+[]
