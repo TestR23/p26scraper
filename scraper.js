@@ -10,12 +10,14 @@ async function scrapearPartidosHoy() {
   console.log("⚽ Iniciando scraper partidos-de-hoy.com...");
 
   const { data } = await axios.get(URL, {
-    headers: {
-      "User-Agent": "Mozilla/5.0"
-    }
+    headers: { "User-Agent": "Mozilla/5.0" }
   });
 
+  console.log("HTML length:", data.length);
+
   const $ = cheerio.load(data);
+  console.log("bloques encontrados:", $(".bloque-dia").length);
+
   const resultado = [];
 
   $(".bloque-dia").each((_, bloqueDia) => {
@@ -34,12 +36,7 @@ async function scrapearPartidosHoy() {
       });
 
       if (hora && local && visitante) {
-        partidos.push({
-          hora,
-          local,
-          visitante,
-          canales
-        });
+        partidos.push({ hora, local, visitante, canales });
       }
     });
 
