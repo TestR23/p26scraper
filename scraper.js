@@ -1,77 +1,61 @@
-import axios from "axios";
-import * as cheerio from "cheerio";
+import { chromium } from "playwright";
 import fs from "fs";
 import path from "path";
 
-const URL = "https://www.futbolenlatv.es/competicion/la-liga";
 const OUTPUT_PATH = "docs/partidos.json";
+const URL = "https://www.futbolenlatv.es/competicion/la-liga";
 
 async function scrapearLaLiga() {
-  console.log("⚽ Iniciando scraper LaLiga...");
+  console.log("⚽ Abriendo navegador...");
 
-  const response = await axios.get(URL, {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36",
-    },
-  });
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.goto(URL, { waitUntil: "networkidle" });
 
-  const $ = cheerio.load(response.data);
-  const resultado = [];
+  const resultado = await page.evaluate(() => {
+    const dias = [];
+    const fechas = document.querySelectorAll("h2, h3");
 
-  // Recorre cada sección de día
-  $("h2, h3").each((_, elemento) => {
-    const textoFecha = $(elemento).text().trim();
+    fechas.forEach(fechaEl => {
+      if (!fechaEl.innerText.match(/\d{2}\/\d{2}\/\d{4}/)) return;
 
-    // Detectar fecha de forma robusta
-    if (!textoFecha.match(/\d{2}\/\d{2}\/\d{4}/)) return;
+      const fecha = fechaEl.innerText.trim();
+      const partidos = [];
 
-    const fecha = textoFecha;
-    const partidos = [];
+      let el = fechaEl.nextElementSibling;
+      while (el && !["H2", "H3"].includes(el.tagName)) {
+        const hora = el.querySelector("span")?.innerText;
+        const equipos = el.querySelectorAll("img + span");
 
-    // Buscar todos los partidos inmediatamente después de la fecha
-    let siguiente = $(elemento).next();
-
-    while (siguiente.length && siguiente.get(0).name !== "h2" && siguiente.get(0).name !== "h3") {
-      const hora = siguiente.find("span:contains(':')").first().text().trim();
-
-      const local = siguiente.find("img + span").first().text().trim();
-      const visitante = siguiente.find("img + span").last().text().trim();
-
-      if (hora && local && visitante) {
-        const canales = [];
-        siguiente.find("ul li").each((_, li) => {
-          const canal = $(li).text().trim();
-          if (canal && !canal.includes("Comprar")) {
-            canales.push(canal);
-          }
-        });
-
-        partidos.push({ hora, local, visitante, canales });
+        if (hora && equipos.length === 2) {
+          partidos.push({
+            hora,
+            local: equipos[0].innerText,
+            visitante: equipos[1].innerText
+          });
+        }
+        el = el.nextElementSibling;
       }
 
-      siguiente = siguiente.next();
-    }
+      if (partidos.length > 0) {
+        dias.push({ fecha, partidos });
+      }
+    });
 
-    if (partidos.length > 0) {
-      resultado.push({ fecha, competicion: "LaLiga EA Sports", partidos });
-    }
+    return dias;
   });
+
+  await browser.close();
 
   if (resultado.length === 0) {
     console.log("⚠️ ALERTA: No se han encontrado partidos");
   } else {
-    console.log(`✅ Scraping OK: ${resultado.length} días encontrados`);
+    console.log(`✅ Scraping OK: ${resultado.length} días`);
   }
 
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(resultado, null, 2));
-
-  console.log("RESULTADO FINAL:", JSON.stringify(resultado, null, 2));
 }
 
-scrapearLaLiga().catch((err) => {
-  console.error("❌ Error en el scraper:", err.message);
-  process.exit(1);
-});
+scrapearLaLiga();
 
