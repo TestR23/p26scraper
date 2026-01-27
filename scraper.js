@@ -19,6 +19,7 @@ async function scrapearLaLiga() {
   const $ = cheerio.load(response.data);
   const resultado = [];
 
+  // Cada fecha
   $(".titFecha").each((_, cabecera) => {
     const fecha = $(cabecera).text().trim();
     const tabla = $(cabecera).next("table");
@@ -42,7 +43,12 @@ async function scrapearLaLiga() {
           }
         });
 
-      partidos.push({ hora, local, visitante, canales });
+      partidos.push({
+        hora,
+        local,
+        visitante,
+        canales,
+      });
     });
 
     if (partidos.length > 0) {
@@ -55,13 +61,22 @@ async function scrapearLaLiga() {
     }
   });
 
+  // ALERTA si no hay datos
+  if (resultado.length === 0) {
+    console.log("⚠️ ALERTA: No se han encontrado partidos");
+  } else {
+    console.log(`✅ Scraping OK: ${resultado.length} días encontrados`);
+  }
+
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
   fs.writeFileSync(OUTPUT_PATH, JSON.stringify(resultado, null, 2));
 
   console.log("RESULTADO FINAL:", JSON.stringify(resultado, null, 2));
-  console.log(`✅ partidos.json generado con ${resultado.length} días`);
 }
 
-scrapearLaLiga();
+scrapearLaLiga().catch((err) => {
+  console.error("❌ Error en el scraper:", err.message);
+  process.exit(1);
+});
 
 
