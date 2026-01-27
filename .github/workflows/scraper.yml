@@ -2,8 +2,6 @@ name: Actualizar partidos LaLiga
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main ]
   schedule:
     - cron: "0 9 * * *"
 
@@ -17,8 +15,6 @@ jobs:
     steps:
       - name: Clonar repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Usar Node
         uses: actions/setup-node@v4
@@ -26,13 +22,7 @@ jobs:
           node-version: 20
 
       - name: Instalar dependencias
-        run: |
-          npm install
-          npx playwright install --with-deps
-
-      - name: Reset repo
-        run: |
-          git reset --hard origin/main
+        run: npm install
 
       - name: Ejecutar scraper
         run: node scraper.js
@@ -43,4 +33,4 @@ jobs:
           git config user.email "github-actions@github.com"
           git add docs/partidos.json
           git commit -m "Actualizar partidos" || echo "Sin cambios"
-          git push origin main
+          git push
