@@ -1,47 +1,67 @@
-import { chromium } from "playwright";
+import axios from "axios";
+import * as cheerio from "cheerio";
 import fs from "fs";
 import path from "path";
 
+const URL = "https://www.partidos-de-hoy.com/";
 const OUTPUT_PATH = "docs/partidos.json";
-const URL = "https://www.futbolenlatv.es/competicion/la-liga";
 
-async function scrapearLaLiga() {
-  console.log("⚽ Abriendo navegador...");
+async function scrapearPartidosHoy() {
+  console.log("⚽ Iniciando scraper partidos-de-hoy.com...");
 
-  const browser = await chromium.launch({ headless: true });
-  const page = await browser.newPage();
-
-  let datosPartidos = null;
-
-  page.on("response", async (response) => {
-    const url = response.url();
-
-    // 👇 Este es el patrón bueno (endpoints reales de partidos)
-    if (url.includes("futbolenlatv") && url.includes("laliga")) {
-      try {
-        const json = await response.json();
-        datosPartidos = json;
-        console.log("🎯 API de partidos capturada:", url);
-      } catch {}
+  const { data } = await axios.get(URL, {
+    headers: {
+      "User-Agent": "Mozilla/5.0"
     }
   });
 
-  await page.goto(URL, { waitUntil: "domcontentloaded", timeout: 60000 });
-  await page.waitForTimeout(8000); // esperar a que todas las XHR carguen
+  const $ = cheerio.load(data);
+  const resultado = [];
 
-  await browser.close();
+  $(".bloque-dia").each((_, bloqueDia) => {
+    const fecha = $(bloqueDia).find(".titulo-dia").text().trim();
+    const partidos = [];
 
-  if (!datosPartidos) {
-    console.log("⚠️ No se ha capturado la API de partidos");
-    return;
+    $(bloqueDia).find(".partido").each((_, partido) => {
+      const hora = $(partido).find(".hora").text().trim();
+      const local = $(partido).find(".equipo-local").text().trim();
+      const visitante = $(partido).find(".equipo-visitante").text().trim();
+
+      const canales = [];
+      $(partido).find(".canales span").each((_, canal) => {
+        const nombre = $(canal).text().trim();
+        if (nombre) canales.push(nombre);
+      });
+
+      if (hora && local && visitante) {
+        partidos.push({
+          hora,
+          local,
+          visitante,
+          canales
+        });
+      }
+    });
+
+    if (partidos.length > 0) {
+      resultado.push({
+        fecha,
+        competicion: "LaLiga",
+        partidos,
+        total: partidos.length
+      });
+    }
+  });
+
+  if (resultado.length === 0) {
+    console.log("⚠️ ALERTA: No se han encontrado partidos");
+  } else {
+    console.log(`✅ Scraping OK: ${resultado.length} días`);
   }
 
-  // Guardamos SOLO lo que nos interesa
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(datosPartidos, null, 2));
-
-  console.log("✅ partidos.json generado desde API real");
+  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(resultado, null, 2));
 }
 
-scrapearLaLiga();
+scrapearPartidosHoy();
 
