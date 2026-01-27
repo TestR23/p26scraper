@@ -11,34 +11,37 @@ async function scrapearLaLiga() {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage();
 
-  let datosAPI = null;
+  let datosPartidos = null;
 
-  // Escuchar respuestas de red
   page.on("response", async (response) => {
     const url = response.url();
-    if (url.includes("/api/")) {
+
+    // 👇 Este es el patrón bueno (endpoints reales de partidos)
+    if (url.includes("futbolenlatv") && url.includes("laliga")) {
       try {
         const json = await response.json();
-        datosAPI = json;
+        datosPartidos = json;
+        console.log("🎯 API de partidos capturada:", url);
       } catch {}
     }
   });
 
   await page.goto(URL, { waitUntil: "domcontentloaded", timeout: 60000 });
-  await page.waitForTimeout(5000); // esperar a que cargue la API
+  await page.waitForTimeout(8000); // esperar a que todas las XHR carguen
 
   await browser.close();
 
-  if (!datosAPI) {
-    console.log("⚠️ No se ha capturado ninguna API");
+  if (!datosPartidos) {
+    console.log("⚠️ No se ha capturado la API de partidos");
     return;
   }
 
-  // Aquí ya tienes los datos reales
+  // Guardamos SOLO lo que nos interesa
   fs.mkdirSync(path.dirname(OUTPUT_PATH), { recursive: true });
-  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(datosAPI, null, 2));
+  fs.writeFileSync(OUTPUT_PATH, JSON.stringify(datosPartidos, null, 2));
 
-  console.log("✅ Datos capturados desde API interna");
+  console.log("✅ partidos.json generado desde API real");
 }
 
 scrapearLaLiga();
+
