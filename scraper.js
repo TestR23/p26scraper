@@ -19,49 +19,45 @@ async function scrapearLaLiga() {
   const $ = cheerio.load(response.data);
   const resultado = [];
 
-  // Cada fecha
-  $(".titFecha").each((_, cabecera) => {
-    const fecha = $(cabecera).text().trim();
-    const tabla = $(cabecera).next("table");
+  // Recorre cada sección de día
+  $("h2, h3").each((_, elemento) => {
+    const textoFecha = $(elemento).text().trim();
+
+    // Detectar fecha de forma robusta
+    if (!textoFecha.match(/\d{2}\/\d{2}\/\d{4}/)) return;
+
+    const fecha = textoFecha;
     const partidos = [];
 
-    tabla.find("tr").each((_, row) => {
-      const hora = $(row).find("td.hora").text().trim();
-      const local = $(row).find("td.local span").text().trim();
-      const visitante = $(row).find("td.visitante span").text().trim();
+    // Buscar todos los partidos inmediatamente después de la fecha
+    let siguiente = $(elemento).next();
 
-      if (!hora || !local || !visitante) return;
+    while (siguiente.length && siguiente.get(0).name !== "h2" && siguiente.get(0).name !== "h3") {
+      const hora = siguiente.find("span:contains(':')").first().text().trim();
 
-      const canales = [];
+      const local = siguiente.find("img + span").first().text().trim();
+      const visitante = siguiente.find("img + span").last().text().trim();
 
-      $(row)
-        .find("td.canales li")
-        .each((_, li) => {
+      if (hora && local && visitante) {
+        const canales = [];
+        siguiente.find("ul li").each((_, li) => {
           const canal = $(li).text().trim();
           if (canal && !canal.includes("Comprar")) {
             canales.push(canal);
           }
         });
 
-      partidos.push({
-        hora,
-        local,
-        visitante,
-        canales,
-      });
-    });
+        partidos.push({ hora, local, visitante, canales });
+      }
+
+      siguiente = siguiente.next();
+    }
 
     if (partidos.length > 0) {
-      resultado.push({
-        fecha,
-        competicion: "LaLiga EA Sports",
-        partidos,
-        total: partidos.length,
-      });
+      resultado.push({ fecha, competicion: "LaLiga EA Sports", partidos });
     }
   });
 
-  // ALERTA si no hay datos
   if (resultado.length === 0) {
     console.log("⚠️ ALERTA: No se han encontrado partidos");
   } else {
@@ -78,5 +74,4 @@ scrapearLaLiga().catch((err) => {
   console.error("❌ Error en el scraper:", err.message);
   process.exit(1);
 });
-
 
